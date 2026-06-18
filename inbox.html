@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Inbox Chat — Blast WA Personal</title>
+<script src="config.js"></script>
+<style>
+  :root {
+    --bg:#0b1220; --panel:#121a2b; --panel2:#0f1626; --line:#223;
+    --text:#e6ecff; --muted:#8b97b8;
+    --teal:#2DBDB6; --lime:#9ACF87; --teal-soft:rgba(45,189,182,.15);
+    --warn:#f59e0b; --danger:#ef4444; --blue:#3b82f6;
+    --bubble-in:#1f2937; --bubble-out:rgba(45,189,182,.2);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;flex-direction:column;overflow:hidden}
+
+  header{padding:12px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;background:var(--panel);flex-shrink:0}
+  header .logo{height:24px;width:auto}
+  header .sep{width:1px;height:20px;background:var(--line)}
+  header h1{font-size:14px;margin:0;font-weight:500;color:var(--muted)}
+  header a.nav{color:var(--muted);text-decoration:none;font-size:13px;padding:4px 10px;border-radius:6px;border:1px solid var(--line)}
+  header a.nav:hover{color:var(--teal);border-color:var(--teal)}
+  header a.nav.active{color:var(--teal);border-color:var(--teal);background:var(--teal-soft)}
+  .user{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+  .user img{width:24px;height:24px;border-radius:50%;border:1px solid var(--line)}
+  .status-pill{font-size:11px;padding:3px 9px;border-radius:999px;background:#1f2937;color:var(--muted)}
+  .status-pill.ok{background:rgba(45,189,182,.2);color:var(--teal)}
+  .status-pill.warn{background:#78350f;color:#fde68a}
+
+  main{flex:1;display:flex;overflow:hidden}
+
+  /* ===== COL 1 — BUCKET NAV ===== */
+  .col-bucket{width:230px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;padding:16px 12px}
+  .col-bucket .acc-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:16px}
+  .col-bucket .acc-card .title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .col-bucket .acc-card .icon-circle{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--teal),var(--lime));display:flex;align-items:center;justify-content:center;color:#0b1220;font-weight:700;font-size:14px}
+  .col-bucket .acc-card .sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .col-bucket .acc-card .status{font-size:11px;margin-top:8px;padding:4px 8px;background:rgba(154,207,135,.15);color:var(--lime);border-radius:6px;display:inline-flex;align-items:center;gap:4px}
+  .col-bucket .acc-card .status::before{content:"●"}
+
+  .col-bucket .label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:8px 0 6px;padding-left:8px}
+  .bucket-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:0;background:transparent;color:var(--text);font-size:13px;text-align:left;width:100%;margin-bottom:2px;transition:background .12s}
+  .bucket-btn:hover{background:var(--panel2)}
+  .bucket-btn.active{background:var(--panel2);border:1px solid var(--line)}
+  .bucket-btn .dot{width:8px;height:8px;border-radius:50%}
+  .bucket-btn .name{flex:1;font-weight:500}
+  .bucket-btn .count{font-size:11px;background:var(--line);color:var(--muted);padding:2px 8px;border-radius:10px;min-width:24px;text-align:center}
+  .bucket-btn.active .count{background:var(--teal);color:#0b1220;font-weight:600}
+  .dot.after_blast{background:var(--blue)}
+  .dot.open{background:var(--lime)}
+  .dot.in_progress{background:var(--warn)}
+  .dot.done{background:var(--muted)}
+  .dot.invalid{background:var(--danger)}
+  .dot.on_going{background:#a78bfa}
+  .dot.force_close{background:#64748b}
+
+  .user-card{margin-top:auto;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11px;color:var(--muted)}
+  .user-card b{color:var(--text);display:block;font-size:12px;font-weight:600}
+  .user-card a.signout{color:var(--teal);font-size:11px;text-decoration:none;float:right}
+
+  /* ===== COL 2 — THREAD LIST ===== */
+  .col-list{width:360px;background:var(--panel2);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0}
+  .list-header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .list-header h2{margin:0;font-size:15px;font-weight:600}
+  .list-header .badge{background:var(--line);color:var(--muted);padding:1px 8px;border-radius:10px;font-size:11px;font-weight:500}
+  .list-header .badge.hl{background:var(--teal);color:#0b1220}
+  .list-header .sort{margin-left:auto;font-size:11px;color:var(--muted)}
+
+  .search-box{padding:10px 14px;border-bottom:1px solid var(--line)}
+  .search-box input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 12px;font-size:12px}
+  .search-box input:focus{outline:none;border-color:var(--teal)}
+
+  .thread-list{flex:1;overflow-y:auto}
+  .thread-item{padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:12px;position:relative;transition:background .12s}
+  .thread-item:hover{background:var(--panel)}
+  .thread-item.selected{background:var(--panel);box-shadow:inset 3px 0 0 var(--teal)}
+  .thread-item .avatar{width:36px;height:36px;border-radius:50%;background:var(--line);display:flex;align-items:center;justify-content:center;color:var(--text);font-weight:600;font-size:13px;flex-shrink:0}
+  .thread-item .body{flex:1;min-width:0}
+  .thread-item .top{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+  .thread-item .name{font-weight:600;font-size:13px;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .thread-item .time{font-size:10px;color:var(--muted);flex-shrink:0}
+  .thread-item .phone{color:var(--muted);font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-bottom:4px}
+  .thread-item .preview{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .thread-item .status-tag{display:inline-block;font-size:9px;padding:1px 7px;border-radius:8px;text-transform:uppercase;letter-spacing:.4px;margin-top:6px;font-weight:600}
+  .status-tag.after_blast{background:rgba(59,130,246,.2);color:var(--blue)}
+  .status-tag.open{background:rgba(154,207,135,.2);color:var(--lime)}
+  .status-tag.in_progress{background:rgba(245,158,11,.2);color:var(--warn)}
+  .status-tag.done{background:rgba(139,151,184,.2);color:var(--muted)}
+  .status-tag.invalid{background:rgba(239,68,68,.2);color:var(--danger)}
+  .status-tag.on_going{background:rgba(167,139,250,.2);color:#a78bfa}
+  .status-tag.force_close{background:rgba(100,116,139,.2);color:#94a3b8}
+  .thread-item .team-tag{display:inline-block;font-size:9px;padding:1px 7px;border-radius:8px;margin-top:6px;margin-left:6px;font-weight:600;background:rgba(45,189,182,.18);color:var(--teal);text-transform:uppercase;letter-spacing:.3px}
+  .thread-item .unread{background:var(--lime);color:#0b1220;font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;position:absolute;top:14px;right:18px}
+  .empty{padding:60px 20px;text-align:center;color:var(--muted);font-size:13px}
+
+  /* ===== COL 3 — CHAT DETAIL ===== */
+  .col-chat{flex:1;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;min-width:0}
+  .chat-header{padding:14px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;background:var(--panel);flex-shrink:0}
+  .chat-header .avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--lime));display:flex;align-items:center;justify-content:center;color:#0b1220;font-weight:600}
+  .chat-header .info{flex:1;min-width:0}
+  .chat-header .h-name{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chat-header .h-phone{color:var(--muted);font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .chat-header .h-assign{color:var(--warn);font-size:11px;margin-top:2px}
+  .chat-header .actions{display:flex;gap:8px;flex-shrink:0}
+  .chat-header button{font-size:12px;padding:8px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--text);font-weight:500;transition:all .12s}
+  .chat-header button.done-btn{background:var(--lime);color:#0b1220;border-color:var(--lime);font-weight:600}
+  .chat-header button.done-btn:hover{filter:brightness(1.1)}
+  .chat-header button.invalid-btn{color:var(--danger);border-color:rgba(239,68,68,.5)}
+  .chat-header button.invalid-btn:hover{background:rgba(239,68,68,.12)}
+  .chat-header button.ongoing-btn{color:#a78bfa;border-color:rgba(167,139,250,.5)}
+  .chat-header button.ongoing-btn:hover{background:rgba(167,139,250,.12)}
+  .chat-header button.reopen-btn{border-color:var(--blue);color:var(--blue)}
+  .chat-header button.reopen-btn:hover{background:var(--blue);color:#fff}
+  .chat-header button:hover:not(.done-btn):not(.reopen-btn){background:var(--panel2)}
+
+  .messages{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:6px;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.02) 1px,transparent 0);background-size:20px 20px}
+  .day-sep{text-align:center;color:var(--muted);font-size:11px;margin:16px 0 8px;text-transform:uppercase;letter-spacing:1px}
+  .msg{max-width:55%;padding:8px 12px;border-radius:10px;word-wrap:break-word;line-height:1.4;font-size:13px;white-space:pre-wrap}
+  .msg .meta{font-size:10px;color:var(--muted);margin-top:4px;display:flex;gap:6px}
+  .msg.in{background:var(--bubble-in);align-self:flex-start;border-bottom-left-radius:2px}
+  .msg.out{background:var(--bubble-out);align-self:flex-end;border-bottom-right-radius:2px}
+  .msg.system{background:transparent;align-self:center;color:var(--muted);font-size:11px;font-style:italic;max-width:80%;text-align:center;padding:4px 12px;border:1px dashed var(--line);border-radius:6px;margin:8px 0}
+  .msg .media{color:var(--warn);font-style:italic}
+
+  .reply-box{padding:14px 20px;border-top:1px solid var(--line);background:var(--panel);flex-shrink:0;display:flex;gap:10px;align-items:flex-end}
+  .reply-box textarea{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 14px;font:13px/1.4 inherit;resize:none;min-height:40px;max-height:120px}
+  .reply-box textarea:focus{outline:none;border-color:var(--teal)}
+  .reply-box button{background:var(--teal);color:#0b1220;border:0;padding:10px 22px;border-radius:10px;cursor:pointer;font-weight:600;height:40px}
+  .reply-box button:disabled{opacity:.5;cursor:not-allowed}
+  .reply-box.locked{opacity:.5;pointer-events:none}
+  .reply-box.locked textarea{cursor:not-allowed}
+
+  .no-thread{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:40px;flex-direction:column;gap:8px}
+  .no-thread .icon{font-size:64px;opacity:.4}
+  .global-err{background:#7f1d1d;color:#fecaca;padding:8px 20px;font-size:12px;text-align:center}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--panel);border:1px solid var(--lime);color:var(--lime);padding:10px 16px;border-radius:8px;font-size:13px;display:none;z-index:100}
+</style>
+</head>
+<body>
+<div id="apiErrBanner" class="global-err" style="display:none"></div>
+<header>
+  <img src="assets/majoo-logo.svg" class="logo" alt="majoo" />
+  <div class="sep"></div>
+  <a href="index.html" class="nav">Blast</a>
+  <a href="inbox.html" class="nav active">Inbox <span id="navUnread" style="background:var(--lime);color:#0b1220;padding:1px 6px;border-radius:8px;margin-left:4px;font-size:10px;display:none"></span></a>
+  <span style="flex:1"></span>
+  <span id="connStatus" class="status-pill">checking...</span>
+  <div class="user" id="userBox" style="visibility:hidden">
+    <img id="userAvatar" src="" alt="" />
+    <span id="userName">—</span>
+  </div>
+</header>
+
+<main>
+  <!-- COL 1 — BUCKETS -->
+  <div class="col-bucket">
+    <div class="acc-card">
+      <div class="title">
+        <div class="icon-circle">📥</div>
+        <div>
+          Inbox<br/>
+          <span class="sub">majoo Blast WA</span>
+        </div>
+      </div>
+      <div class="status" id="waStatusBadge">WA Connected</div>
+    </div>
+
+    <div class="label">Bucket</div>
+    <button class="bucket-btn active" data-bucket="after_blast">
+      <span class="dot after_blast"></span>
+      <span class="name">After Blast</span>
+      <span class="count" id="cAfterBlast">0</span>
+    </button>
+    <button class="bucket-btn" data-bucket="open">
+      <span class="dot open"></span>
+      <span class="name">Open</span>
+      <span class="count" id="cOpen">0</span>
+    </button>
+    <button class="bucket-btn" data-bucket="in_progress">
+      <span class="dot in_progress"></span>
+      <span class="name">In Progress</span>
+      <span class="count" id="cProg">0</span>
+    </button>
+    <button class="bucket-btn" data-bucket="on_going">
+      <span class="dot on_going"></span>
+      <span class="name">On Going</span>
+      <span class="count" id="cOnGoing">0</span>
+    </button>
+    <button class="bucket-btn" data-bucket="done">
+      <span class="dot done"></span>
+      <span class="name">Done</span>
+      <span class="count" id="cDone">0</span>
+    </button>
+    <button class="bucket-btn" data-bucket="invalid">
+      <span class="dot invalid"></span>
+      <span class="name">Invalid</span>
+      <span class="count" id="cInvalid">0</span>
+    </button>
+    <button class="bucket-btn" data-bucket="force_close">
+      <span class="dot force_close"></span>
+      <span class="name">Force Close</span>
+      <span class="count" id="cForceClose">0</span>
+    </button>
+
+    <div class="user-card">
+      <div><b id="userCardName">—</b></div>
+      <span id="userCardEmail">—</span>
+      <a href="#" class="signout" id="signoutBtn">Keluar</a>
+    </div>
+  </div>
+
+  <!-- COL 2 — THREAD LIST -->
+  <div class="col-list">
+    <div class="list-header">
+      <h2 id="listTitle">After Blast</h2>
+      <span class="badge hl" id="listCount">0</span>
+      <span class="sort">↓ Terbaru</span>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Cari outlet, nomor, atau isi chat..." />
+    </div>
+    <div style="display:flex;gap:8px;padding:0 12px 8px;align-items:center">
+      <select id="teamFilter" style="flex:1;font-size:12px;padding:6px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px">
+        <option value="">Semua Team</option>
+      </select>
+      <button id="syncTeamBtn" title="Tarik mapping team dari Google Sheet (tab Query Blast)" style="font-size:11px;white-space:nowrap;padding:6px 10px;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:6px;cursor:pointer">🔄 Sync Team</button>
+    </div>
+    <div class="thread-list" id="threadList">
+      <div class="empty">Memuat...</div>
+    </div>
+  </div>
+
+  <!-- COL 3 — CHAT DETAIL -->
+  <div class="col-chat">
+    <div id="chatEmpty" class="no-thread">
+      <div class="icon">💬</div>
+      <div>Pilih thread di kiri untuk lihat percakapan</div>
+      <div style="font-size:11px">Hanya nomor yang sudah di-blast yang muncul.<br />Reply akan masuk otomatis ke sini.</div>
+    </div>
+
+    <div id="chatContent" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="chat-header">
+        <div class="avatar" id="hAvatar">--</div>
+        <div class="info">
+          <div class="h-name" id="hName">—</div>
+          <div class="h-phone" id="hPhone">—</div>
+          <div class="h-assign" id="hAssign" style="display:none"></div>
+        </div>
+        <div class="actions">
+          <button class="reopen-btn" id="actReopen" style="display:none">↺ Reopen</button>
+          <button class="ongoing-btn" id="actOnGoing">⏳ On Going</button>
+          <button class="invalid-btn" id="actInvalid">⚠ Invalid</button>
+          <button class="done-btn" id="actDone">✓ Done / Resolved</button>
+        </div>
+      </div>
+
+      <div class="messages" id="messages"></div>
+
+      <div class="reply-box" id="replyBox">
+        <textarea id="replyText" placeholder="Tulis balasan..." rows="1"></textarea>
+        <button id="sendBtn">Kirim</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || '';
+let me = null;
+let currentPhone = null;
+let currentBucket = 'after_blast';
+let currentTeam = '';
+let closingTemplateText = '';
+let pendingDone = false;
+let lastMessageID = 0;
+let allThreads = [];
+let searchTerm = '';
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const initials = name => (name||'').split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
+
+function apiFetch(path, opts = {}) {
+  return fetch(API_BASE + path, { credentials: 'include', ...opts });
+}
+
+function showApiErr(msg) { $('#apiErrBanner').textContent = msg; $('#apiErrBanner').style.display = 'block'; }
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2500); }
+
+const bucketLabels = { after_blast:'After Blast', open:'Open', in_progress:'In Progress', on_going:'On Going', force_close:'Force Close', done:'Done', invalid:'Invalid' };
+
+async function loadMe() {
+  try {
+    const r = await apiFetch('/api/me').then(r => r.json());
+    me = r.user;
+    if (!me) { location.href = 'login.html'; return; }
+    $('#userName').textContent = me.name || me.email;
+    $('#userCardName').textContent = me.name || '(no name)';
+    $('#userCardEmail').textContent = me.email;
+    if (me.picture) $('#userAvatar').src = me.picture;
+    else $('#userAvatar').style.display = 'none';
+    $('#userBox').style.visibility = 'visible';
+  } catch (e) { showApiErr('Tidak bisa konek ke backend'); }
+}
+
+async function pollStatus() {
+  try {
+    const r = await apiFetch('/api/status');
+    if (r.status === 401) { location.href = 'login.html'; return; }
+    const d = await r.json();
+    const pill = $('#connStatus');
+    const badge = $('#waStatusBadge');
+    if (d.loggedIn && d.connected) {
+      pill.textContent = 'WA Connected'; pill.className = 'status-pill ok';
+      badge.textContent = 'WA Connected'; badge.style.background = 'rgba(154,207,135,.15)'; badge.style.color = 'var(--lime)';
+    } else {
+      pill.textContent = d.hasQR ? 'Scan QR' : 'Disconnected'; pill.className = 'status-pill warn';
+      badge.textContent = 'WA Disconnected'; badge.style.background = '#78350f'; badge.style.color = '#fde68a';
+    }
+  } catch (e) {}
+}
+
+async function loadThreads() {
+  try {
+    const r = await apiFetch(`/api/inbox/threads?status=${currentBucket}`).then(r => r.json());
+    $('#cAfterBlast').textContent = r.counts.after_blast || 0;
+    $('#cOpen').textContent = r.counts.open || 0;
+    $('#cProg').textContent = r.counts.in_progress || 0;
+    $('#cOnGoing').textContent = r.counts.on_going || 0;
+    $('#cDone').textContent = r.counts.done || 0;
+    $('#cInvalid').textContent = r.counts.invalid || 0;
+    $('#cForceClose').textContent = r.counts.force_close || 0;
+
+    const unread = r.counts.unread || 0;
+    const navUnread = $('#navUnread');
+    if (unread > 0) { navUnread.style.display = 'inline-block'; navUnread.textContent = unread; }
+    else navUnread.style.display = 'none';
+
+    allThreads = r.threads || [];
+    populateTeamFilter(r.teams || []);
+    $('#listTitle').textContent = bucketLabels[currentBucket] || 'All';
+    $('#listCount').textContent = allThreads.length;
+    renderThreadList();
+  } catch (e) { console.error(e); }
+}
+
+function renderThreadList() {
+  const list = $('#threadList');
+  list.innerHTML = '';
+  let filtered = allThreads;
+  if (currentTeam) filtered = filtered.filter(t => (t.team||'') === currentTeam);
+  if (searchTerm) {
+    const s = searchTerm.toLowerCase();
+    filtered = filtered.filter(t =>
+      (t.nama_outlet||'').toLowerCase().includes(s)
+      || t.phone.includes(s)
+      || (t.last_preview||'').toLowerCase().includes(s));
+  }
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">Tidak ada thread' + (currentTeam ? ' untuk team ini' : ' di bucket ini') + '.<br/><small>Coba ganti filter/bucket atau Sync Team.</small></div>';
+    return;
+  }
+  filtered.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'thread-item';
+    if (t.phone === currentPhone) div.classList.add('selected');
+    const time = t.last_message_at ? new Date(t.last_message_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+    const namaDisplay = t.nama_outlet || t.phone;
+    const previewPrefix = t.last_direction === 'in' ? '' : 'Anda: ';
+    div.innerHTML = `
+      <div class="avatar">${esc(initials(namaDisplay))}</div>
+      <div class="body">
+        <div class="top">
+          <span class="name">${esc(namaDisplay)}</span>
+          <span class="time">${time}</span>
+        </div>
+        <div class="phone">+${esc(t.phone)}</div>
+        <div class="preview">${esc(previewPrefix + (t.last_preview || ''))}</div>
+        <span class="status-tag ${t.status}">${esc(bucketLabels[t.status]||t.status)}</span>
+        ${t.team ? '<span class="team-tag">'+esc(t.team)+'</span>' : ''}
+      </div>
+      ${t.unread_count > 0 ? '<span class="unread">'+t.unread_count+'</span>' : ''}`;
+    div.addEventListener('click', () => selectThread(t.phone));
+    list.appendChild(div);
+  });
+}
+
+async function selectThread(phone) {
+  currentPhone = phone;
+  lastMessageID = 0;
+  pendingDone = false;
+  $('#sendBtn').textContent = 'Kirim';
+  $$('#threadList .thread-item').forEach(d => d.classList.remove('selected'));
+  $('#chatEmpty').style.display = 'none';
+  $('#chatContent').style.display = 'flex';
+  await loadMessages(true);
+  await apiFetch(`/api/inbox/read?phone=${encodeURIComponent(phone)}`, { method: 'POST' });
+  loadThreads();
+}
+
+async function loadMessages(scrollBottom) {
+  if (!currentPhone) return;
+  try {
+    const r = await apiFetch(`/api/inbox/messages?phone=${encodeURIComponent(currentPhone)}`).then(r => r.json());
+    closingTemplateText = r.closing_template || '';
+    const nama = r.nama_outlet || '(no outlet)';
+    $('#hName').textContent = nama;
+    $('#hPhone').textContent = '+' + currentPhone;
+    $('#hAvatar').textContent = initials(nama);
+    if (r.assigned_name) {
+      $('#hAssign').textContent = 'PIC: ' + r.assigned_name;
+      $('#hAssign').style.display = '';
+    } else {
+      $('#hAssign').style.display = 'none';
+    }
+
+    // Action buttons & reply lock. done/invalid = terminal (terkunci, bisa Reopen).
+    const replyBox = $('#replyBox');
+    const terminal = (r.status === 'done' || r.status === 'invalid');
+    const ongoing = (r.status === 'on_going');
+    if (terminal) {
+      $('#actDone').style.display = 'none';
+      $('#actInvalid').style.display = 'none';
+      $('#actOnGoing').style.display = 'none';
+      $('#actReopen').style.display = '';
+      replyBox.classList.add('locked');
+      $('#replyText').placeholder = (r.status === 'invalid')
+        ? 'Thread ditandai Invalid. Reopen untuk aktifkan lagi.'
+        : 'Thread sudah Done. Reopen untuk aktifkan lagi.';
+    } else {
+      $('#actDone').style.display = '';
+      $('#actInvalid').style.display = '';
+      // On Going tampil saat aktif; saat sudah on_going, ganti jadi Reopen (jalan keluar → Open)
+      $('#actOnGoing').style.display = ongoing ? 'none' : '';
+      $('#actReopen').style.display = ongoing ? '' : 'none';
+      replyBox.classList.remove('locked');
+      $('#replyText').placeholder = ongoing ? 'Sedang divalidasi (On Going). Tulis balasan...' : 'Tulis balasan...';
+    }
+
+    const msgs = r.messages || [];
+    const newMaxID = msgs.length ? msgs[msgs.length-1].id : 0;
+    if (newMaxID === lastMessageID && $('#messages').children.length > 0) return;
+    lastMessageID = newMaxID;
+
+    const list = $('#messages');
+    list.innerHTML = '';
+    let lastDate = '';
+    msgs.forEach(m => {
+      const d = new Date(m.timestamp);
+      const dateStr = d.toLocaleDateString('id-ID', {weekday:'long',day:'numeric',month:'short'});
+      if (dateStr !== lastDate) {
+        const sep = document.createElement('div');
+        sep.className = 'day-sep';
+        sep.textContent = dateStr;
+        list.appendChild(sep);
+        lastDate = dateStr;
+      }
+      const div = document.createElement('div');
+      div.className = 'msg ' + m.direction;
+      const timeStr = d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      const sender = m.direction === 'out' && m.sender_name ? esc(m.sender_name) : (m.direction === 'in' ? 'User' : 'Blast');
+      const bodyHtml = m.is_media ? '<span class="media">'+esc(m.body)+'</span>' : esc(m.body);
+      div.innerHTML = bodyHtml + `<div class="meta">${sender} · ${timeStr}</div>`;
+      list.appendChild(div);
+    });
+    if (scrollBottom) list.scrollTop = list.scrollHeight;
+  } catch (e) { console.error(e); }
+}
+
+// Done = muat closing message ke kotak balasan agar agent bisa edit dulu.
+// Thread baru pindah ke Done SETELAH agent menekan Kirim (lihat sendReply).
+$('#actDone').addEventListener('click', () => {
+  if (!currentPhone) return;
+  const ta = $('#replyText');
+  ta.value = closingTemplateText || '';
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  ta.focus();
+  pendingDone = true;
+  $('#sendBtn').textContent = 'Kirim & Tutup';
+  toast('✏️ Closing message dimuat. Edit bila perlu, lalu "Kirim & Tutup" untuk menutup thread.');
+});
+
+// Invalid — nomor salah / perlu revisi. Tidak kirim pesan, pindah ke bucket Invalid.
+$('#actInvalid').addEventListener('click', async () => {
+  if (!currentPhone) return;
+  if (!confirm('Tandai thread ini sebagai INVALID?\n\nPakai kalau nomor salah / perlu revisi. TIDAK ada pesan yang dikirim. Thread pindah ke bucket Invalid & dikunci.')) return;
+  $('#actInvalid').disabled = true;
+  try {
+    const fd = new FormData(); fd.append('status', 'invalid');
+    const r = await apiFetch(`/api/inbox/status?phone=${encodeURIComponent(currentPhone)}`, { method: 'POST', body: fd });
+    if (!r.ok) { alert('Gagal: ' + await r.text()); return; }
+    toast('⚠ Thread ditandai Invalid.');
+    await loadMessages(false);
+    loadThreads();
+  } finally {
+    $('#actInvalid').disabled = false;
+  }
+});
+
+// On Going — tandai nomor sedang divalidasi. Tidak kirim pesan. Keluar dari antrian
+// auto-retry (cron cuma proses after_blast + in_progress). Sticky sampai Done/Invalid/Reopen.
+$('#actOnGoing').addEventListener('click', async () => {
+  if (!currentPhone) return;
+  $('#actOnGoing').disabled = true;
+  try {
+    const fd = new FormData(); fd.append('status', 'on_going');
+    const r = await apiFetch(`/api/inbox/status?phone=${encodeURIComponent(currentPhone)}`, { method: 'POST', body: fd });
+    if (!r.ok) { alert('Gagal: ' + await r.text()); return; }
+    toast('⏳ Thread ditandai On Going (sedang divalidasi).');
+    await loadMessages(false);
+    loadThreads();
+  } finally {
+    $('#actOnGoing').disabled = false;
+  }
+});
+
+// Reopen — manual escape Done
+$('#actReopen').addEventListener('click', async () => {
+  if (!currentPhone) return;
+  if (!confirm('Reopen thread? Status akan kembali ke Open.\nReply user berikutnya akan tertangkap normal lagi.')) return;
+  const fd = new FormData();
+  fd.append('status', 'open');
+  await apiFetch(`/api/inbox/status?phone=${encodeURIComponent(currentPhone)}`, { method: 'POST', body: fd });
+  toast('↺ Thread di-reopen ke Open.');
+  await loadMessages(false);
+  loadThreads();
+});
+
+// Reply
+$('#sendBtn').addEventListener('click', sendReply);
+$('#replyText').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); sendReply(); }
+});
+$('#replyText').addEventListener('input', e => {
+  e.target.style.height = 'auto';
+  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+});
+
+async function sendReply() {
+  const text = $('#replyText').value.trim();
+  if (!text || !currentPhone) return;
+  const closing = pendingDone;            // tutup thread setelah kirim?
+  $('#sendBtn').disabled = true;
+  $('#sendBtn').textContent = '...';
+  const fd = new FormData();
+  fd.append('body', text);
+  try {
+    const r = await apiFetch(`/api/inbox/reply?phone=${encodeURIComponent(currentPhone)}`, { method: 'POST', body: fd });
+    if (!r.ok) { alert('Gagal: ' + await r.text()); return; }
+    $('#replyText').value = ''; $('#replyText').style.height = 'auto';
+    if (closing) {
+      const sf = new FormData(); sf.append('status', 'done');
+      const sr = await apiFetch(`/api/inbox/status?phone=${encodeURIComponent(currentPhone)}`, { method: 'POST', body: sf });
+      if (sr.ok) { pendingDone = false; toast('✅ Pesan terkirim. Thread ditutup (Done).'); }
+      else { alert('Pesan terkirim, tapi gagal menutup thread: ' + await sr.text()); }
+    }
+    await loadMessages(true);
+    loadThreads();
+  } finally {
+    $('#sendBtn').disabled = false;
+    $('#sendBtn').textContent = pendingDone ? 'Kirim & Tutup' : 'Kirim';
+  }
+}
+
+// Bucket tabs
+$$('.bucket-btn').forEach(b => b.addEventListener('click', () => {
+  $$('.bucket-btn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  currentBucket = b.dataset.bucket;
+  loadThreads();
+}));
+
+// Search
+$('#searchInput').addEventListener('input', e => {
+  searchTerm = e.target.value.trim();
+  renderThreadList();
+});
+
+// Team filter — isi dropdown dari daftar team (pertahankan pilihan saat reload)
+function populateTeamFilter(teams) {
+  const sel = $('#teamFilter');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Semua Team</option>' +
+    teams.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if (teams.includes(prev)) sel.value = prev; else { sel.value = ''; currentTeam = ''; }
+}
+$('#teamFilter').addEventListener('change', e => {
+  currentTeam = e.target.value;
+  renderThreadList();
+});
+
+// Sync Team dari Google Sheet (tab Query Blast)
+$('#syncTeamBtn').addEventListener('click', async () => {
+  const btn = $('#syncTeamBtn');
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Sync...';
+  try {
+    const r = await apiFetch('/api/inbox/sync-teams', { method: 'POST' });
+    if (!r.ok) { alert('Sync gagal: ' + await r.text()); return; }
+    const d = await r.json();
+    btn.textContent = `✅ ${d.updated} ter-tag`;
+    await loadThreads();
+    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2500);
+  } catch (e) { alert('Sync error: ' + e.message); btn.textContent = original; btn.disabled = false; }
+});
+
+$('#signoutBtn').addEventListener('click', async e => {
+  e.preventDefault();
+  await apiFetch('/auth/logout', { method: 'POST' });
+  location.href = 'login.html';
+});
+
+// Init
+loadMe().then(() => {
+  if (!me) return;
+  pollStatus(); setInterval(pollStatus, 3000);
+  loadThreads(); setInterval(loadThreads, 5000);
+  setInterval(() => { if (currentPhone) loadMessages(false); }, 3000);
+});
+</script>
+</body>
+</html>
