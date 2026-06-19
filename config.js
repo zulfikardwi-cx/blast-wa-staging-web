@@ -5,5 +5,5 @@ window.APP_CONFIG = {
   // - Lokal dev (mesin staging sendiri): "http://localhost:8080"
   // - Setelah Cloudflare Tunnel staging siap, ganti ke: "https://<tunnel-staging>"
   //   (URL harus SAMA dengan host halaman ini → tetap same-origin / first-party cookie).
-  API_BASE: "https://accessories-responsible-reception-dangerous.trycloudflare.com",
+  API_BASE: "https://discusses-nat-graphical-recordings.trycloudflare.com",
 };
